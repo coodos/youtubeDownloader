@@ -1,0 +1,114 @@
+from pytube import YouTube
+from youtube_transcript_api import YouTubeTranscriptApi  
+from tkinter import *
+import os 
+from tkinter.filedialog import askdirectory
+import time
+import subprocess
+
+class youtubeVideo: 
+
+    def __init__(self, link, location):
+        self.link = link
+        self.id = link.split('?v=')[-1].split('?')[0]
+        self.stream = YouTube(link).streams.filter(file_extension="mp4").order_by("resolution").last()
+        self.loc = location 
+        self.downloadVideo()       
+
+    def downloadVideo(self):
+        self.localName = YouTube(self.link).title
+        self.localName = utilities.getName(self.localName)
+        self.stream.download(f'{self.loc}', filename = self.localName)
+        time.sleep(1)
+        self.audio = YouTube(self.link).streams.filter(only_audio=True).first()
+        self.audio.download(f'{self.loc}', filename = f'{self.localName}_audio')
+        command = f"ffmpeg -i {self.loc}/{self.localName}_audio.mp4 -ab 160k -ac 2 -ar 44100 -vn {self.loc}/{self.localName}_audio.wav"
+        subprocess.call(command, shell=True)
+        time.sleep(1)
+        os.remove(f'{self.loc}/{self.localName}_audio.mp4')
+        command = f"ffmpeg -i {self.loc}/{self.localName}.mp4 -i {self.loc}/{self.localName}_audio.wav -c:v copy -c:a aac {self.loc}/yt_downloader_{self.localName}.mp4"
+        subprocess.call(command, shell=True)
+        os.remove(f"{self.loc}/{self.localName}_audio.wav")
+        os.remove(f"{self.loc}/{self.localName}.mp4")
+        guiMethods.switch()
+        time.sleep(1)
+        self.captions = self.getCaptions()
+        self.captionsHandler(self)
+        
+    def getCaptions(self):
+        return (YouTubeTranscriptApi.get_transcript(self.id, languages=['en', 'en-US']))
+
+
+    class captionsHandler: 
+
+        def __init__(self, parent):
+            count = 1
+            for caption in parent.captions: 
+                with open(f"{parent.loc}/{parent.localName}.srt", 'a+') as f:
+                    f.write(f"{count}\n{youtubeVideo.captionsHandler.convert(caption['start'])} --> {youtubeVideo.captionsHandler.convert(caption['start'] + caption['duration']) }\n<font>{caption['text']}</font>\n\n")
+                count += 1
+           
+        @staticmethod
+        def convert(seconds): 
+            seconds = seconds % (24 * 3600) 
+            hour = seconds // 3600
+            seconds %= 3600
+            minutes = seconds // 60
+            seconds %= 60
+            
+            return "%d:%02d:%02d" % (hour, minutes, seconds) 
+            
+class guiMethods: 
+
+    @staticmethod
+    def getSaveLocation():
+        file = askdirectory()
+        print(file)
+        return file
+
+    @staticmethod
+    def processEntryData():
+        guiMethods.switch()
+        try: 
+            youtubeVideo(youtubeLink.get(), guiMethods.getSaveLocation())
+        except Exception: 
+            pass
+            guiMethods.switch()
+    @staticmethod
+    def switch():
+        global button
+        if button["state"] == "normal":
+            button["state"] = "disabled"
+            button["text"] = "downloading..."
+        else:
+            button["state"] = "normal"
+            button["text"] = "download"
+
+        
+class utilities:
+
+    @staticmethod
+    def getName(name):
+        outputName = ''
+        for char in name: 
+            if ord(char.lower()) in range(97, 122) or char in ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']:
+                outputName += char
+            if char == " ":
+                outputName += "_"
+        return outputName
+
+if __name__ == "__main__":    
+
+    root = Tk()
+    root.title("YoutubeDownloader")
+    root.geometry("500x350")
+
+    Label(root, text="Enter Video URL", font = ("arial", 30, "bold")).pack(padx=20, pady=20)
+    youtubeLink = Entry(root, width=50)
+    youtubeLink.pack()
+
+    global button
+    button = Button(root, text ="Download Video", command = guiMethods.processEntryData, bg="#3d3d3d", fg="#fff")
+    button.pack(padx=20, pady=20)
+
+    root.mainloop()
