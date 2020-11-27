@@ -12,7 +12,7 @@ class youtubeVideo:
         self.link = link
         self.id = link.split('?v=')[-1].split('?')[0]
         self.stream = YouTube(link).streams.filter(file_extension="mp4").order_by("resolution").last()
-        self.loc = location 
+        self.loc = location
         self.downloadVideo()       
 
     def downloadVideo(self):
@@ -22,11 +22,11 @@ class youtubeVideo:
         time.sleep(1)
         self.audio = YouTube(self.link).streams.filter(only_audio=True).first()
         self.audio.download(f'{self.loc}', filename = f'{self.localName}_audio')
-        command = f"ffmpeg -i {self.loc}/{self.localName}_audio.mp4 -ab 160k -ac 2 -ar 44100 -vn {self.loc}/{self.localName}_audio.wav"
+        command = f'ffmpeg -i "{self.loc}/{self.localName}_audio.mp4" -ab 160k -ac 2 -ar 44100 -vn "{self.loc}/{self.localName}_audio.wav" '
         subprocess.call(command, shell=True)
         time.sleep(1)
         os.remove(f'{self.loc}/{self.localName}_audio.mp4')
-        command = f"ffmpeg -i {self.loc}/{self.localName}.mp4 -i {self.loc}/{self.localName}_audio.wav -c:v copy -c:a aac {self.loc}/yt_downloader_{self.localName}.mp4"
+        command = f'ffmpeg -i "{self.loc}/{self.localName}.mp4" -i "{self.loc}/{self.localName}_audio.wav" -c:v copy -c:a aac "{self.loc}/yt_downloader_{self.localName}.mp4" '
         subprocess.call(command, shell=True)
         os.remove(f"{self.loc}/{self.localName}_audio.wav")
         os.remove(f"{self.loc}/{self.localName}.mp4")
@@ -69,11 +69,13 @@ class guiMethods:
     @staticmethod
     def processEntryData():
         guiMethods.switch()
-        try: 
-            youtubeVideo(youtubeLink.get(), guiMethods.getSaveLocation())
-        except Exception: 
-            pass
-            guiMethods.switch()
+        # try: 
+        youtubeVideo(youtubeLink.get(), guiMethods.getSaveLocation())
+        # except Exception as error: 
+        #     print(error)
+        #     guiMethods.switch()
+        #     pass
+            
     @staticmethod
     def switch():
         global button
@@ -96,6 +98,7 @@ class utilities:
             if char == " ":
                 outputName += "_"
         return outputName
+
 
 if __name__ == "__main__":    
 
