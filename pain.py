@@ -5,6 +5,7 @@ import os
 from tkinter.filedialog import askdirectory
 import time
 import subprocess
+import random
 
 class youtubeVideo: 
 
@@ -26,11 +27,13 @@ class youtubeVideo:
         subprocess.call(command, shell=True)
         time.sleep(1)
         os.remove(f'{self.loc}/{self.localName}_audio.mp4')
-        command = f'ffmpeg -i "{self.loc}/{self.localName}.mp4" -i "{self.loc}/{self.localName}_audio.wav" -c:v copy -c:a aac "{self.loc}/yt_downloader_{self.localName}.mp4" '
+        self.ending = random.randint(1000,9999)
+        command = f'ffmpeg -i "{self.loc}/{self.localName}.mp4" -i "{self.loc}/{self.localName}_audio.wav" -c:v copy -c:a aac "{self.loc}/yt_downloader_{self.localName}_{self.ending}.mp4" '
         subprocess.call(command, shell=True)
         os.remove(f"{self.loc}/{self.localName}_audio.wav")
         os.remove(f"{self.loc}/{self.localName}.mp4")
-        guiMethods.switch()
+        guiMethods.switch(True)
+        guiMethods.makePopup(f"Video Download finished\n{self.loc}")
         time.sleep(1)
         self.captions = self.getCaptions()
         self.captionsHandler(self)
@@ -44,7 +47,7 @@ class youtubeVideo:
         def __init__(self, parent):
             count = 1
             for caption in parent.captions: 
-                with open(f"{parent.loc}/{parent.localName}.srt", 'a+') as f:
+                with open(f"{parent.loc}/yt_downloader_{parent.localName}_{parent.ending}.srt", 'a+') as f:
                     f.write(f"{count}\n{youtubeVideo.captionsHandler.convert(caption['start'])} --> {youtubeVideo.captionsHandler.convert(caption['start'] + caption['duration']) }\n<font>{caption['text']}</font>\n\n")
                 count += 1
            
@@ -68,23 +71,36 @@ class guiMethods:
 
     @staticmethod
     def processEntryData():
-        guiMethods.switch()
-        # try: 
-        youtubeVideo(youtubeLink.get(), guiMethods.getSaveLocation())
-        # except Exception as error: 
-        #     print(error)
-        #     guiMethods.switch()
-        #     pass
+        guiMethods.switch(False)
+        try: 
+            guiMethods.makePopup("Your video is downloading ...\nPlease Wait while the download finishes")
+            fileName = guiMethods.getSaveLocation()            
+            youtubeVideo(youtubeLink.get(), fileName)
+        except Exception as error: 
+            print(error)
+            guiMethods.switch(True)
+            guiMethods.makePopup(f"Error : {error}")
+            pass
             
     @staticmethod
-    def switch():
+    def switch(state):
         global button
-        if button["state"] == "normal":
+        if state == False:
             button["state"] = "disabled"
             button["text"] = "downloading..."
-        else:
+        if state == True:
             button["state"] = "normal"
             button["text"] = "download"
+
+    @staticmethod
+    def makePopup(message):
+        win = Toplevel()
+        win.wm_title("Alert")
+
+        Label(win, text=message).pack(padx=20, pady=15)
+
+        b = Button(win, text="Okay", command=win.destroy)
+        b.pack(padx=20, pady=15)
 
         
 class utilities:
@@ -111,7 +127,7 @@ if __name__ == "__main__":
     youtubeLink.pack()
 
     global button
-    button = Button(root, text ="Download Video", command = guiMethods.processEntryData, bg="#3d3d3d", fg="#fff")
+    button = Button(root, text ="Download Video", command = guiMethods.processEntryData, bg="#3d3d3d", fg="#fff", width=17)
     button.pack(padx=20, pady=20)
 
     root.mainloop()
