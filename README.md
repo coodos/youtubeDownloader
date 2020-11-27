@@ -9,4 +9,4 @@
 
 2. then run `python pain.py`
 
-### Enjoy my suffering ig ¯\\_(ツ)_/¯
+### Enjoy my suffering ig ¯\\__(ツ)__/¯
